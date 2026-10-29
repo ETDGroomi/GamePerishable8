@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>PERISHABLE QUEST — Misi Ayam & Telur</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#dff4ff; --ink:#102a43; --pink:#ff4d8d; --cyan:#00d9ff;
+  --yellow:#ffd83d; --lime:#7cf29a; --blue:#4f72ff; --red:#ff5a67;
+  --white:#fff; --shadow:6px 6px 0 var(--ink);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{
+  margin:0; min-height:100vh; color:var(--ink);
+  font-family:"Fredoka",Arial,sans-serif;
+  background:
+    radial-gradient(circle at 16px 16px, rgba(16,42,67,.10) 2px, transparent 2.5px) 0 0/32px 32px,
+    linear-gradient(180deg,#f8fdff 0%,var(--bg) 100%);
+  overflow-x:hidden;
+}
+h1,h2,h3,.brand{font-family:"Space Grotesk",Arial,sans-serif}
+.card{
+  background:var(--white); border:4px solid var(--ink); border-radius:18px;
+  box-shadow:var(--shadow);
+}
+.btn{
+  border:4px solid var(--ink); border-radius:16px; box-shadow:5px 5px 0 var(--ink);
+  font-weight:800; transition:.12s ease; touch-action:manipulation;
+}
+.btn:active{transform:translate(4px,4px);box-shadow:2px 2px 0 var(--ink)}
+.choice{
+  border:4px solid var(--ink); background:#fff; border-radius:15px; box-shadow:4px 4px 0 rgba(16,42,67,.18);
+  font-weight:800; transition:.15s ease; cursor:pointer;
+}
+.choice:hover{transform:translateY(-2px)}
+.choice.correct{background:#cbffd9;border-color:#0a8048}
+.choice.wrong{background:#ffdfe3;border-color:#af1c2a}
+.choice.selected{outline:4px solid #ffb300; outline-offset:2px}
+.hidden{display:none!important}
+.topbar{
+  position:fixed;top:0;left:0;width:100%;z-index:40;background:#fff;border-bottom:4px solid var(--ink);
+}
+.progress-track{height:14px;background:#e8eef3;border:3px solid var(--ink);border-radius:999px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--pink),var(--yellow),var(--cyan));transition:width .4s}
+.timer-track{height:12px;background:#d8edff;border:3px solid var(--ink);border-radius:999px;overflow:hidden}
+.timer-fill{height:100%;background:linear-gradient(90deg,#40d978,#ffd83d,#ff5a67);transition:width 1s linear}
+.badge{border:3px solid var(--ink);border-radius:999px;box-shadow:3px 3px 0 rgba(16,42,67,.18)}
+.tap{
+  border:4px solid var(--ink); border-radius:15px; background:#fff; padding:12px;
+  box-shadow:4px 4px 0 rgba(16,42,67,.14); cursor:pointer; user-select:none;
+}
+.tap.dragging{opacity:.5;transform:rotate(-2deg)}
+.tap.drag-selected{outline:4px solid var(--pink);outline-offset:2px}
+.drag-ghost{position:fixed!important;z-index:9999;pointer-events:none;opacity:.9;transform:rotate(-2deg);width:min(260px,75vw);box-shadow:6px 6px 0 var(--ink)}
+.tap{touch-action:none}
+.drop-zone{
+  min-height:62px; border:4px dashed #6b9ed0; border-radius:15px; background:#f8fcff;
+  transition:.15s;
+}
+.drop-zone.over{border-color:var(--pink);background:#fff7bd;transform:scale(1.02)}
+.connect-board{position:relative;border:4px solid var(--ink);border-radius:18px;background:#f9fdff;overflow:hidden;padding:14px}
+.connect-grid{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:14px 44px;align-items:center}
+.connect-col{display:flex;flex-direction:column;gap:12px;position:relative;z-index:2}
+.connect-card{
+  min-height:62px;display:flex;align-items:center;justify-content:center;text-align:center;padding:10px 12px;
+  font-weight:800;line-height:1.25;background:#fff;border:4px solid var(--ink);border-radius:15px;box-shadow:4px 4px 0 rgba(16,42,67,.14);cursor:pointer
+}
+.connect-card.matched{background:#cbffd9;border-color:#0a8048}
+.connect-card.left-selected{background:#fff3a6;outline:4px solid #ffb300;outline-offset:1px}
+.connect-card.disabled{pointer-events:none}
+.connect-lines{position:absolute;inset:0;width:100%;height:100%;z-index:1;pointer-events:none}
+.connect-line{fill:none;stroke:#18a35b;stroke-width:5;stroke-linecap:round;stroke-linejoin:round}
+.toast{
+ position:fixed;left:50%;bottom:20px;transform:translateX(-50%);z-index:90;width:min(92vw,520px);
+ border:4px solid var(--ink);border-radius:16px;box-shadow:6px 6px 0 var(--ink);padding:14px 16px;font-weight:800;
+ animation:toastIn .25s ease-out;
+}
+@keyframes toastIn{from{transform:translate(-50%,20px);opacity:0}to{transform:translate(-50%,0);opacity:1}}
+@keyframes pop{0%{transform:scale(.88)}60%{transform:scale(1.05)}100%{transform:scale(1)}}
+.pop{animation:pop .35s ease-out}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+.shake{animation:shake .35s ease-in-out}
+.avatar{font-size:4rem;filter:drop-shadow(4px 4px 0 rgba(16,42,67,.15))}
+@media(min-width:768px){#app{max-width:940px;margin:0 auto}}
+</style>
+</head>
+<body>
+<div id="app" class="min-h-screen px-4 pt-20 pb-10">
+
+  <div id="topbar" class="topbar hidden">
+    <div class="max-w-4xl mx-auto px-4 py-2 flex items-center gap-3">
+      <div class="flex-1">
+        <div class="progress-track"><div id="progressFill" class="progress-fill" style="width:0%"></div></div>
+        <div class="text-xs font-bold mt-1"><span id="progressText">0%</span> • <span id="missionLabel">MISSION START</span></div>
+      </div>
+      <div id="scoreBox" class="badge bg-yellow-200 px-3 py-2 text-sm font-black">⭐ 0</div>
+      <button id="audioBtn" class="badge bg-pink-300 px-3 py-2 text-lg" type="button">🔊</button>
+    </div>
+  </div>
+
+  <div id="toastWrap"></div>
+
+  <section id="startScreen" class="max-w-3xl mx-auto">
+    <div class="card p-6 md:p-10 relative overflow-hidden">
+      <div class="absolute -top-10 -right-10 w-36 h-36 rounded-full bg-yellow-300 border-4 border-black"></div>
+      <div class="relative z-10">
+        <div class="flex items-center justify-between">
+          <div class="badge bg-cyan-200 px-4 py-2 font-black text-sm">PERISHABLE • QUEST</div>
+          <div class="badge bg-pink-200 px-4 py-2 font-black text-sm">MISI 9–10</div>
+        </div>
+        <div class="text-center mt-5">
+          <div class="avatar">🍗🥚</div>
+          <h1 class="text-4xl md:text-6xl font-black leading-none mt-2">AYAM & TELUR</h1>
+          <p class="mt-3 text-lg md:text-xl font-bold">Level up your handling skill! ⚡</p>
+        </div>
+
+        <div class="grid md:grid-cols-3 gap-3 mt-6">
+          <div class="card p-3 bg-pink-100 text-center"><div class="text-2xl">🧠</div><b>12 Challenge</b></div>
+          <div class="card p-3 bg-yellow-100 text-center"><div class="text-2xl">⏱️</div><b>30 detik/soal</b></div>
+          <div class="card p-3 bg-cyan-100 text-center"><div class="text-2xl">❤️</div><b>5 nyawa</b></div>
+        </div>
+
+        <div class="card p-4 mt-6 bg-blue-50">
+          <h2 class="text-xl font-black">🎯 MISSION BRIEFING</h2>
+          <p class="mt-2 text-sm md:text-base leading-relaxed">
+            Hadapi challenge seputar penanganan ayam broiler fresh, unggas beku, jenis potongan ayam,
+            serta penanganan dan risiko produk telur. Pilih, hubungkan, urutkan, dan kelompokkan jawabanmu.
+          </p>
+          <p class="mt-2 text-sm font-bold">⚠️ Beberapa challenge memberi kesempatan mengubah jawaban sebelum tombol CEK ditekan.</p>
+        </div>
+
+        <div class="mt-6 space-y-3">
+          <input id="nameInput" class="w-full p-4 rounded-2xl border-4 border-black font-bold bg-white" placeholder="Nama lengkap">
+          <input id="nikInput" class="w-full p-4 rounded-2xl border-4 border-black font-bold bg-white" placeholder="NIK">
+        </div>
+
+        <button id="startBtn" class="btn mt-5 w-full py-4 bg-green-400 text-white text-xl" type="button">🚀 MULAI QUEST</button>
+        <p class="text-center text-xs font-bold opacity-70 mt-4">Education & Training Dept. • Perishable</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="quizScreen" class="hidden max-w-4xl mx-auto">
+    <div class="card p-4 md:p-6">
+      <div class="flex items-center justify-between gap-3">
+        <div>
+          <div id="levelBadge" class="badge inline-block bg-yellow-200 px-3 py-1 text-xs font-black">LEVEL</div>
+          <h2 id="questionTitle" class="text-2xl md:text-3xl font-black mt-3"></h2>
+        </div>
+        <div class="badge bg-white px-3 py-2 font-black" id="questionNo">Q1</div>
+      </div>
+
+      <div class="mt-4">
+        <div class="flex justify-between text-sm font-black"><span>⏱️ WAKTU</span><span id="timerText">30</span></div>
+        <div class="timer-track mt-1"><div id="timerFill" class="timer-fill" style="width:100%"></div></div>
+      </div>
+
+      <div id="questionArea" class="mt-6"></div>
+      <div id="feedback" class="mt-4"></div>
+    </div>
+
+    <button id="nextBtn" class="btn mt-5 w-full py-4 bg-blue-500 text-white text-lg" type="button" disabled>LANJUT ➜</button>
+  </section>
+
+  <section id="resultScreen" class="hidden max-w-4xl mx-auto">
+    <div class="card p-6 md:p-10 text-center">
+      <div id="resultEmoji" class="text-7xl pop">🏆</div>
+      <div class="badge inline-block bg-yellow-300 px-4 py-2 mt-2 font-black">QUEST COMPLETE</div>
+      <h2 id="resultTitle" class="text-4xl md:text-5xl font-black mt-4">MISSION DONE!</h2>
+      <p id="resultSub" class="mt-2 font-bold text-slate-600"></p>
+
+      <div class="grid grid-cols-2 gap-3 mt-6">
+        <div class="card bg-cyan-100 p-4"><div class="text-xs font-black">SKOR</div><div id="resultScore" class="text-4xl font-black">0/120</div></div>
+        <div class="card bg-pink-100 p-4"><div class="text-xs font-black">PERSENTASE</div><div id="resultPercent" class="text-4xl font-black">0%</div></div>
+      </div>
+
+      <div class="card bg-white p-4 mt-6 text-left">
+        <h3 class="text-2xl font-black border-b-4 border-black pb-2">📋 DEBRIEFING</h3>
+        <div id="summary" class="mt-3 space-y-2"></div>
+      </div>
+
+      <button id="restartBtn" class="btn mt-6 w-full py-4 bg-yellow-300 text-black text-lg" type="button">🔄 MAIN LAGI</button>
+    </div>
+  </section>
+</div>
+
+<script>
+(() => {
+  const questions = [
+    {
+      id:1, level:'C2', type:'mc',
+      title:'Ayam broiler fresh baru datang. Apa langkah pajang yang paling tepat?',
+      options:[
+        'Segera dipajang dengan suhu dingin, dibungkus dan ditimbang di awal (prepacked)',
+        'Dibiarkan pada suhu ruang sampai semua produk selesai dicek',
+        'Dicampur dengan peralatan daging dan seafood agar lebih praktis',
+        'Dijual tanpa kemasan supaya tidak ada kondensasi'
+      ],
+      answer:0,
+      explanation:'Materi menyebut ayam broiler fresh segera dipajang dengan suhu dingin; karena rawan penyusutan wajib dibungkus dahulu dan ditimbang di awal (prepacked).'
+    },
+    {
+      id:2, level:'C2', type:'mc',
+      title:'Berapa lama umur produk ayam fresh di open top sebelum harus turun pajang?',
+      options:['1 hari','2 hari','3 hari','5 hari'],
+      answer:1,
+      explanation:'Ayam fresh di open top memiliki umur 2 hari. Pada hari ketiga harus turun pajang untuk diolah.'
+    },
+    {
+      id:3, level:'C2', type:'connect',
+      title:'Hubungkan istilah potongan ayam dengan ciri/penjelasan yang paling tepat.',
+      pairs:[
+        {left:'Boneless / Fillet', right:'Daging ayam tanpa tulang'},
+        {left:'Skinless', right:'Daging ayam yang sudah bersih dari kulit'},
+        {left:'Drumstick', right:'Istilah lain dari paha bawah'},
+        {left:'Paha Utuh', right:'Paha atas dan bawah yang menyatu'}
+      ],
+      explanation:'Boneless/fillet berarti tanpa tulang, skinless berarti tanpa kulit, drumstick adalah paha bawah, dan paha utuh merupakan paha atas + bawah yang menyatu.'
+    },
+    {
+      id:4, level:'C2', type:'drag',
+      title:'Kelompokkan jenis potongan ayam sesuai golongan jumlah potongannya.',
+      groups:[
+        {id:'g2', label:'POTONGAN 2', items:['Halves']},
+        {id:'g4', label:'POTONGAN 4', items:['Quarter']},
+        {id:'g8', label:'POTONGAN 8', items:['8 Cut Portion']}
+      ],
+      dragItems:[
+        {id:'d1',text:'Halves',correct:'g2'},
+        {id:'d2',text:'Quarter',correct:'g4'},
+        {id:'d3',text:'8 Cut Portion',correct:'g8'}
+      ],
+      explanation:'Halves membagi ayam menjadi dua; Quarter menjadi empat; 8 Cut Portion menjadi delapan bagian: paha bawah 2, paha atas 2, dada 2, sayap 2.'
+    },
+    {
+      id:5, level:'C3', type:'mc',
+      title:'Saat melakukan potongan 8 Cut Portion, pembagian yang benar adalah…',
+      options:[
+        'Paha bawah 2, paha atas 2, dada 2, sayap 2',
+        'Paha bawah 4 dan dada 4',
+        'Sayap 4 dan paha 4',
+        'Dada 2, kepala 2, ceker 2, sayap 2'
+      ],
+      answer:0,
+      explanation:'Materi merinci 8 Cut Portion menjadi paha bawah 2 potong, paha atas 2 potong, dada 2 potong, dan sayap 2 potong.'
+    },
+    {
+      id:6, level:'C3', type:'mc',
+      title:'Situasi: produk ayam broiler fresh tinggal sedikit. Apa tindakan penyimpanan yang sesuai materi?',
+      options:[
+        'Diolah menjadi parting/potongan per bagian',
+        'Dibiarkan di open top sampai hari kelima',
+        'Dicampur dengan ayam beku lalu dipajang kembali',
+        'Diberi air agar tetap terlihat segar'
+      ],
+      answer:0,
+      explanation:'Jika tersisa hanya sedikit, ayam dapat diolah menjadi parting/potongan per bagian. Umur di open top hanya 2 hari.'
+    },
+    {
+      id:7, level:'C2', type:'mc',
+      title:'Untuk unggas beku, thawing/pencairan dilakukan dengan cara…',
+      options:[
+        'Suhu chiller; jika mendesak boleh dengan bantuan air dengan produk tetap terbungkus rapat',
+        'Direndam air tanpa kemasan agar lebih cepat',
+        'Diletakkan pada suhu ruang semalaman',
+        'Dipajang langsung dalam kondisi sangat beku tanpa penyesuaian'
+      ],
+      answer:0,
+      explanation:'Materi menyebut thawing dilakukan dengan suhu chiller. Jika mendesak dapat menggunakan bantuan air, dengan catatan produk masih terbungkus rapat.'
+    },
+    {
+      id:8, level:'C2', type:'mc',
+      title:'Berapa maksimal tumpukan tray telur yang perlu diperhatikan saat display?',
+      options:['10 tray','12 tray','15 tray','20 tray'],
+      answer:2,
+      explanation:'Stand Keeper Perishable pada Station Telur perlu memperhatikan maksimal tumpukan 15 tray dan display aman dari risiko pecah.'
+    },
+    {
+      id:9, level:'C2', type:'connect',
+      title:'Connecting Dot: cocokkan tanda telur rusak dengan petunjuknya.',
+      pairs:[
+        {left:'Kulit berlendir', right:'Tanda bakteri'},
+        {left:'Kulit berlapisan berdebu', right:'Tanda jamur'},
+        {left:'Telur terapung di air', right:'Tanda telur telah rusak'},
+        {left:'Bau busuk dan anyir', right:'Salah satu tanda telur rusak'}
+      ],
+      explanation:'Materi mencantumkan kulit berlendir sebagai tanda bakteri, lapisan berdebu sebagai tanda jamur, telur terapung sebagai tanda rusak, serta bau busuk/anyir sebagai tanda kerusakan.'
+    },
+    {
+      id:10, level:'C3', type:'drag',
+      title:'Seret satuan jual telur ke kelompok satuan yang tepat.',
+      groups:[
+        {id:'unit1',label:'SATUAN JUAL',items:['Butir','Pack']},
+        {id:'unit2',label:'SATUAN JUAL BERDASARKAN WADAH / KUANTITAS',items:['Ikat / Tray / Papan','Kilo / Peti']}
+      ],
+      dragItems:[
+        {id:'u1',text:'Butir',correct:'unit1'},
+        {id:'u2',text:'Pack',correct:'unit1'},
+        {id:'u3',text:'Ikat / Tray / Papan',correct:'unit2'},
+        {id:'u4',text:'Kilo / Peti',correct:'unit2'}
+      ],
+      explanation:'Materi mencantumkan satuan jual telur: Butir, Ikat/Tray/Papan, Pack, dan Kilo/Peti.'
+    },
+    {
+      id:11, level:'C3', type:'order',
+      title:'Urutkan penanganan tray kotor terkena sisa telur rusak.',
+      items:[
+        'Pindahkan telur baik lainnya ke tray bersih',
+        'Gunakan tray kotor sementara untuk tempat telur rusak',
+        'Jemur tray di bawah sinar matahari terik hingga kering',
+        'Congkel dan bersihkan sisa kerak/noda serta pastikan tidak berbau',
+        'Tray siap digunakan kembali untuk display'
+      ],
+      answer:[
+        'Pindahkan telur baik lainnya ke tray bersih',
+        'Gunakan tray kotor sementara untuk tempat telur rusak',
+        'Jemur tray di bawah sinar matahari terik hingga kering',
+        'Congkel dan bersihkan sisa kerak/noda serta pastikan tidak berbau',
+        'Tray siap digunakan kembali untuk display'
+      ],
+      explanation:'Urutan materi: pindahkan telur baik → tray kotor digunakan sementara untuk telur rusak → jemur → congkel/bersihkan kerak dan pastikan tidak berbau → tray siap digunakan kembali.'
+    },
+    {
+      id:12, level:'C3', type:'mc',
+      title:'Seorang Stand Keeper menemukan telur pecah dan rusak di display. Tindakan pertama yang paling tepat adalah…',
+      options:[
+        'Segera memisahkan telur yang pecah/rusak dan segera membersihkan area telur',
+        'Membiarkannya agar konsumen lain tidak terganggu',
+        'Mencampurnya dengan telur baik agar jumlah display tetap banyak',
+        'Menumpuk semua tray supaya area cepat rapi'
+      ],
+      answer:0,
+      explanation:'Materi menekankan telur pecah/rusak segera dipisahkan dan area telur segera dibersihkan, termasuk meja display, lantai, alas tray/peti, dan produk rusak.'
+    }
+  ];
+
+  const state = {
+    name:'', nik:'', index:0, score:0, lives:5, timer:30, timerId:null,
+    answered:false, dragPlaced:{}, order:[], summaries:[], connectMatches:[]
+  };
+
+  const $ = id => document.getElementById(id);
+  const startScreen=$('startScreen'), quizScreen=$('quizScreen'), resultScreen=$('resultScreen');
+  const topbar=$('topbar'), startBtn=$('startBtn'), nextBtn=$('nextBtn');
+  const questionArea=$('questionArea'), feedback=$('feedback');
+  const scoreBox=$('scoreBox'), progressFill=$('progressFill'), progressText=$('progressText'), missionLabel=$('missionLabel');
+
+  // Simple audio engine
+  let audioCtx=null, muted=false, bgmTimer=null;
+  function ensureAudio(){
+    if(!audioCtx){
+      const A=window.AudioContext||window.webkitAudioContext;
+      if(!A) return;
+      audioCtx=new A();
+    }
+    if(audioCtx.state==='suspended') audioCtx.resume();
+  }
+  function tone(freq=.5,dur=.08,type='square',vol=.08){
+    if(!audioCtx||muted)return;
+    const o=audioCtx.createOscillator(), g=audioCtx.createGain();
+    const t=audioCtx.currentTime;
+    o.type=type;o.frequency.setValueAtTime(freq,t);
+    g.gain.setValueAtTime(.0001,t);
+    g.gain.exponentialRampToValueAtTime(vol,t+.01);
+    g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+    o.connect(g);g.connect(audioCtx.destination);o.start(t);o.stop(t+dur+.02);
+  }
+  function clickSfx(){ensureAudio();tone(540,.06,'square',.10)}
+  function correctSfx(){ensureAudio();tone(700,.09,'sine',.12);setTimeout(()=>tone(980,.14,'sine',.11),70)}
+  function wrongSfx(){ensureAudio();tone(180,.14,'sawtooth',.12);setTimeout(()=>tone(120,.18,'sawtooth',.1),90)}
+  function winSfx(){ensureAudio();[523,659,784,988].forEach((f,i)=>setTimeout(()=>tone(f,.18,'square',.1),i*100))}
+  $('audioBtn').addEventListener('click',()=>{muted=!muted;$('audioBtn').textContent=muted?'🔇':'🔊';clickSfx()});
+
+  function toast(msg,type='error'){
+    const el=document.createElement('div');
+    el.className='toast '+(type==='ok'?'bg-green-300':'bg-red-300');
+    el.innerHTML=msg;
+    $('toastWrap').appendChild(el);
+    setTimeout(()=>el.remove(),3200);
+  }
+
+  function show(screen){
+    [startScreen,quizScreen,resultScreen].forEach(s=>s.classList.add('hidden'));
+    screen.classList.remove('hidden'); window.scrollTo({top:0,behavior:'smooth'});
+  }
+  function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]))}
+  function updateHeader(){
+    const pct=Math.round(((state.index+1)/questions.length)*100);
+    progressFill.style.width=pct+'%'; progressText.textContent=pct+'%';
+    scoreBox.textContent='⭐ '+state.score;
+    const q=questions[state.index]; missionLabel.textContent=`MISSION ${q.id} • ${q.type.toUpperCase()}`;
+  }
+
+  function startTimer(){
+    clearInterval(state.timerId); state.timer=30;
+    $('timerText').textContent='30'; $('timerFill').style.width='100%';
+    state.timerId=setInterval(()=>{
+      if(state.answered)return;
+      state.timer--;
+      $('timerText').textContent=String(state.timer);
+      $('timerFill').style.width=(state.timer/30*100)+'%';
+      if(state.timer<=0){clearInterval(state.timerId); submitAnswer(false,true,null,questions[state.index])}
+    },1000);
+  }
+
+  function setNext(enabled){
+    nextBtn.disabled=!enabled;
+    nextBtn.classList.toggle('bg-blue-500',enabled);
+    nextBtn.classList.toggle('bg-slate-300',!enabled);
+    nextBtn.classList.toggle('text-white',enabled);
+    nextBtn.classList.toggle('text-slate-500',!enabled);
+  }
+
+  function render(){
+    const q=questions[state.index];
+    state.answered=false;state.dragPlaced={};state.order=[];state.connectMatches=[];
+    feedback.innerHTML='';setNext(false);updateHeader();startTimer();
+    $('levelBadge').textContent='LEVEL '+q.level;$('questionTitle').textContent=q.title;$('questionNo').textContent='Q'+q.id;
+
+    if(q.type==='mc') renderMC(q);
+    else if(q.type==='connect') renderConnect(q);
+    else if(q.type==='drag') renderDrag(q);
+    else if(q.type==='order') renderOrder(q);
+  }
+
+  function renderMC(q){
+    const shuffled=q.options.map((text,index)=>({text,index})).sort(()=>Math.random()-.5);
+    questionArea.innerHTML=`<div class="grid gap-3">${shuffled.map((o,i)=>`
+      <button type="button" class="choice p-4 text-left" data-index="${o.index}">
+        <span class="inline-flex w-9 h-9 items-center justify-center rounded-full bg-cyan-100 border-2 border-black mr-2">${String.fromCharCode(65+i)}</span>
+        ${escapeHtml(o.text)}
+      </button>`).join('')}</div>`;
+    questionArea.querySelectorAll('.choice').forEach(btn=>btn.addEventListener('click',()=>{
+      if(state.answered)return;clickSfx();submitAnswer(Number(btn.dataset.index)===q.answer,false,Number(btn.dataset.index),q)
+    }));
+  }
+
+  function renderDrag(q){
+    const pool=q.dragItems.map(x=>`<div class="tap p-3 font-black" draggable="true" data-id="${escapeHtml(x.id)}">${escapeHtml(x.text)}</div>`).join('');
+    const zones=q.groups.map(g=>`<div class="drop-zone p-3" data-group="${escapeHtml(g.id)}" tabindex="0" role="button" aria-label="Kelompok ${escapeHtml(g.label)}">
+      <div class="font-black text-pink-600">${escapeHtml(g.label)}</div><div class="drop-content mt-2 space-y-2"></div>
+    </div>`).join('');
+    questionArea.innerHTML=`
+      <div class="grid md:grid-cols-2 gap-4">
+        <div class="card p-3 bg-yellow-100">
+          <div class="font-black mb-2">🃏 PILIHAN</div><div id="dragPool" class="grid gap-2">${pool}</div>
+        </div>
+        <div class="card p-3 bg-cyan-50">
+          <div class="font-black mb-2">📦 KELOMPOKKAN</div><div id="dropZones" class="grid gap-3">${zones}</div>
+        </div>
+      </div>
+      <button id="checkDrag" class="btn w-full mt-4 py-3 bg-blue-500 text-white" type="button">CEK PENGELOMPOKAN</button>
+      <p class="text-xs font-bold opacity-70 mt-2">Desktop: seret kartu ke kelompok. Smartphone: sentuh kartu, lalu sentuh kelompok tujuan. Kartu yang sudah ditempatkan tetap bisa dipindah sebelum dicek.</p>`;
+
+    let selectedDragId=null;
+    let touchDrag=null;
+    let suppressDragClickUntil=0;
+
+    const getCardId = card => card?.dataset.id || card?.dataset.movedId || null;
+    const findItem = id => q.dragItems.find(x=>x.id===id);
+
+    function refreshSelected(){
+      questionArea.querySelectorAll('.tap[data-id],.tap[data-moved-id]').forEach(card=>{
+        card.classList.toggle('drag-selected',getCardId(card)===selectedDragId);
+      });
+    }
+
+    function clearTouchGhost(){
+      if(touchDrag?.ghost)touchDrag.ghost.remove();
+      if(touchDrag?.card)touchDrag.card.classList.remove('dragging');
+    }
+
+    function returnToPool(id){
+      if(state.answered)return false;
+      const item=findItem(id),poolEl=$('dragPool');
+      if(!item||!poolEl)return false;
+      questionArea.querySelectorAll('.tap[data-id],.tap[data-moved-id]').forEach(card=>{
+        if(getCardId(card)===id)card.remove();
+      });
+      const card=document.createElement('div');
+      card.className='tap p-3 font-black pop';card.draggable=true;card.dataset.id=id;card.textContent=item.text;
+      poolEl.appendChild(card);
+      state.dragPlaced[id]=null;
+      if(selectedDragId===id)selectedDragId=null;
+      refreshSelected();
+      return true;
+    }
+
+    function placeDrag(id,group){
+      const item=findItem(id);
+      const target=questionArea.querySelector(`.drop-zone[data-group="${group}"] .drop-content`);
+      if(!item||!target||state.answered)return false;
+      // Move the same item node logically, removing any previous copy from pool/another group.
+      questionArea.querySelectorAll('.tap[data-id],.tap[data-moved-id]').forEach(card=>{
+        if(getCardId(card)===id)card.remove();
+      });
+      const chip=document.createElement('div');
+      chip.className='tap p-3 font-black bg-white pop';chip.draggable=true;chip.dataset.movedId=id;chip.textContent=item.text;
+      target.appendChild(chip);
+      state.dragPlaced[id]=group;
+      if(selectedDragId===id)selectedDragId=null;
+      refreshSelected();
+      return true;
+    }
+
+    function selectDrag(id){
+      if(state.answered||!findItem(id))return;
+      selectedDragId=(selectedDragId===id?null:id);
+      refreshSelected();
+    }
+
+    // Native HTML5 drag-and-drop for desktop browsers.
+    questionArea.addEventListener('dragstart',e=>{
+      const card=e.target.closest('.tap[data-id],.tap[data-moved-id]');
+      if(!card)return;
+      if(state.answered){e.preventDefault();return;}
+      const id=getCardId(card);
+      if(e.dataTransfer){e.dataTransfer.setData('text/plain',id);e.dataTransfer.effectAllowed='move';}
+      selectedDragId=id;refreshSelected();card.classList.add('dragging');
+    });
+    questionArea.addEventListener('dragend',e=>{
+      const card=e.target.closest('.tap[data-id],.tap[data-moved-id]');
+      if(card)card.classList.remove('dragging');
+      questionArea.querySelectorAll('.drop-zone').forEach(z=>z.classList.remove('over'));
+    });
+    questionArea.addEventListener('dragover',e=>{
+      const target=e.target.closest('.drop-zone,#dragPool');
+      if(!target||state.answered)return;
+      e.preventDefault();
+      if(target.classList.contains('drop-zone'))target.classList.add('over');
+    });
+    questionArea.addEventListener('dragleave',e=>{
+      const zone=e.target.closest('.drop-zone');
+      if(zone&&(!e.relatedTarget||!zone.contains(e.relatedTarget)))zone.classList.remove('over');
+    });
+    questionArea.addEventListener('drop',e=>{
+      const zone=e.target.closest('.drop-zone');
+      const poolTarget=e.target.closest('#dragPool');
+      if(!zone&&!poolTarget)return;
+      e.preventDefault();
+      const id=e.dataTransfer?.getData('text/plain');
+      if(!id)return;
+      if(zone){zone.classList.remove('over');placeDrag(id,zone.dataset.group);}
+      else returnToPool(id);
+    });
+
+    // Touch pointer dragging for phones/tablets. The tap-to-select fallback below remains available.
+    questionArea.addEventListener('pointerdown',e=>{
+      if(e.pointerType==='mouse'||state.answered)return;
+      const card=e.target.closest('.tap[data-id],.tap[data-moved-id]');
+      if(!card)return;
+      touchDrag={id:getCardId(card),startX:e.clientX,startY:e.clientY,pointerId:e.pointerId,card,ghost:null,moved:false};
+      try{card.setPointerCapture(e.pointerId)}catch(_){/* pointer capture may not be supported */}
+    },{passive:true});
+
+    questionArea.addEventListener('pointermove',e=>{
+      if(!touchDrag||touchDrag.pointerId!==e.pointerId||state.answered)return;
+      const dx=e.clientX-touchDrag.startX,dy=e.clientY-touchDrag.startY;
+      if(!touchDrag.moved&&Math.hypot(dx,dy)<8)return;
+      e.preventDefault();
+      if(!touchDrag.moved){
+        touchDrag.moved=true;
+        touchDrag.ghost=touchDrag.card.cloneNode(true);
+        touchDrag.ghost.classList.remove('dragging','drag-selected');
+        touchDrag.ghost.classList.add('drag-ghost');
+        document.body.appendChild(touchDrag.ghost);
+        touchDrag.card.classList.add('dragging');
+      }
+      touchDrag.ghost.style.left=(e.clientX+12)+'px';
+      touchDrag.ghost.style.top=(e.clientY+12)+'px';
+    },{passive:false});
+
+    function finishTouchDrag(e,cancelled=false){
+      if(!touchDrag||touchDrag.pointerId!==e.pointerId)return;
+      const d=touchDrag;
+      if(d.moved&&!cancelled){
+        const target=document.elementFromPoint(e.clientX,e.clientY);
+        const zone=target?.closest('.drop-zone');
+        const poolTarget=target?.closest('#dragPool');
+        if(zone)placeDrag(d.id,zone.dataset.group);
+        else if(poolTarget)returnToPool(d.id);
+        suppressDragClickUntil=Date.now()+500;
+      }
+      clearTouchGhost();touchDrag=null;
+    }
+    questionArea.addEventListener('pointerup',e=>finishTouchDrag(e,false));
+    questionArea.addEventListener('pointercancel',e=>finishTouchDrag(e,true));
+
+    // Universal tap fallback: select a card, then tap the desired group. Tap a placed card,
+    // then tap the pool's empty area to return it, or tap another group to move it directly.
+    questionArea.addEventListener('click',e=>{
+      if(Date.now()<suppressDragClickUntil){e.preventDefault();return;}
+      if(state.answered)return;
+      const card=e.target.closest('.tap[data-id],.tap[data-moved-id]');
+      if(card){
+        const clickedId=getCardId(card);
+        const cardZone=card.closest('.drop-zone');
+        // If the user taps an occupied drop zone while another card is selected,
+        // treat that tap as dropping the selected card into that group.
+        if(selectedDragId&&selectedDragId!==clickedId&&cardZone){
+          placeDrag(selectedDragId,cardZone.dataset.group);return;
+        }
+        selectDrag(clickedId);return;
+      }
+      const zone=e.target.closest('.drop-zone');
+      if(zone&&selectedDragId){placeDrag(selectedDragId,zone.dataset.group);return;}
+      const poolTarget=e.target.closest('#dragPool');
+      if(poolTarget&&selectedDragId&&state.dragPlaced[selectedDragId])returnToPool(selectedDragId);
+    });
+
+    // Keyboard users can focus a group and press Enter/Space to place the selected card.
+    questionArea.querySelectorAll('.drop-zone').forEach(zone=>zone.addEventListener('keydown',e=>{
+      if((e.key==='Enter'||e.key===' ')&&selectedDragId&&!state.answered){e.preventDefault();placeDrag(selectedDragId,zone.dataset.group);}
+    }));
+
+    $('checkDrag').addEventListener('click',()=>{
+      if(state.answered)return;
+      const all=q.dragItems.every(x=>Boolean(state.dragPlaced[x.id]));
+      const correct=all&&q.dragItems.every(x=>state.dragPlaced[x.id]===x.correct);
+      submitAnswer(correct,false,null,q);
+    });
+  }
+
+  function renderConnect(q){
+    questionArea.innerHTML=`
+      <div class="connect-board" id="connectBoard">
+        <svg id="connectSvg" class="connect-lines"></svg>
+        <div class="connect-grid">
+          <div class="connect-col" id="connectLeft"></div>
+          <div class="connect-col" id="connectRight"></div>
+        </div>
+      </div>
+      <p class="text-xs font-bold opacity-70 mt-3">Pilih item kiri → pilih pasangan kanan. Pasangan bisa diganti sebelum CEK.</p>
+      <button id="checkConnect" class="btn w-full mt-4 py-3 bg-blue-500 text-white">CEK PASANGAN</button>`;
+    const left=$('connectLeft'),right=$('connectRight'),svg=$('connectSvg'),board=$('connectBoard');
+    left.innerHTML=q.pairs.map((p,i)=>`<button class="connect-card" data-side="left" data-id="${i}">${escapeHtml(p.left)}</button>`).join('');
+    const shuffled=q.pairs.map((p,i)=>({...p,idx:i})).sort(()=>Math.random()-.5);
+    right.innerHTML=shuffled.map(p=>`<button class="connect-card" data-side="right" data-id="${p.idx}">${escapeHtml(p.right)}</button>`).join('');
+    let selectedLeft=null;
+
+    function point(node){const br=svg.getBoundingClientRect(),r=node.getBoundingClientRect();return{x:r.left-br.left+r.width/2,y:r.top-br.top+r.height/2}}
+    function draw(){
+      const sr=svg.getBoundingClientRect();svg.setAttribute('viewBox',`0 0 ${sr.width} ${sr.height}`);svg.innerHTML='';
+      state.connectMatches.forEach(m=>{
+        const l=questionArea.querySelector(`[data-side="left"][data-id="${m.left}"]`),r=questionArea.querySelector(`[data-side="right"][data-id="${m.right}"]`);
+        if(!l||!r)return; const a=point(l),b=point(r),mx=(a.x+b.x)/2;
+        const path=document.createElementNS('http://www.w3.org/2000/svg','path');path.setAttribute('d',`M ${a.x} ${a.y} C ${mx-24} ${a.y}, ${mx+24} ${b.y}, ${b.x} ${b.y}`);path.setAttribute('class','connect-line');svg.appendChild(path)
+      });
+    }
+    function repaint(){
+      questionArea.querySelectorAll('.connect-card').forEach(b=>b.classList.remove('matched','disabled'));
+      state.connectMatches.forEach(m=>{
+        questionArea.querySelector(`[data-side="left"][data-id="${m.left}"]`)?.classList.add('matched');
+        questionArea.querySelector(`[data-side="right"][data-id="${m.right}"]`)?.classList.add('matched');
+      }); draw();
+    }
+    questionArea.querySelectorAll('.connect-card').forEach(btn=>btn.addEventListener('click',()=>{
+      if(state.answered)return;clickSfx();
+      const side=btn.dataset.side,id=Number(btn.dataset.id);
+      if(side==='left'){
+        selectedLeft=id;
+        questionArea.querySelectorAll('[data-side="left"]').forEach(b=>b.classList.remove('left-selected'));
+        btn.classList.add('left-selected'); return;
+      }
+      if(selectedLeft===null)return;
+      // Replace prior link of either endpoint
+      state.connectMatches=state.connectMatches.filter(m=>m.left!==selectedLeft&&m.right!==id);
+      state.connectMatches.push({left:selectedLeft,right:id});selectedLeft=null;
+      questionArea.querySelectorAll('[data-side="left"]').forEach(b=>b.classList.remove('left-selected'));repaint();
+    }));
+    $('checkConnect').addEventListener('click',()=>{
+      const correct=state.connectMatches.length===q.pairs.length&&state.connectMatches.every(m=>m.left===m.right);
+      submitAnswer(correct,false,null,q)
+    });
+    requestAnimationFrame(draw);window.addEventListener('resize',draw,{once:true});
+  }
+
+  function renderOrder(q){
+    state.order=[...q.items].sort(()=>Math.random()-.5);
+    questionArea.innerHTML=`
+      <div class="text-sm font-black mb-2">SUSUN DARI URUTAN 1 → TERAKHIR</div>
+      <div id="orderList" class="space-y-2">${state.order.map((x,i)=>`
+        <div class="tap order-item p-3 flex items-center gap-3" draggable="true" data-item="${escapeHtml(x)}">
+          <span class="badge bg-yellow-200 px-2 py-1 text-xs">${i+1}</span><span class="font-black flex-1">${escapeHtml(x)}</span><span>↕️</span>
+        </div>`).join('')}</div>
+      <p class="text-xs font-bold opacity-70 mt-2">Desktop: drag. Mobile: tap item untuk menggeser satu langkah ke atas.</p>
+      <button id="checkOrder" class="btn w-full mt-4 py-3 bg-blue-500 text-white">CEK URUTAN</button>`;
+    let dragSrc=null;
+    questionArea.querySelectorAll('.order-item').forEach(item=>{
+      item.addEventListener('dragstart',()=>{dragSrc=item;item.classList.add('dragging')});
+      item.addEventListener('dragend',()=>{dragSrc=null;item.classList.remove('dragging');updateOrderState()});
+      item.addEventListener('dragover',e=>{
+        e.preventDefault(); if(!dragSrc||dragSrc===item)return;
+        const r=item.getBoundingClientRect(),before=e.clientY<r.top+r.height/2;
+        item.parentElement.insertBefore(dragSrc,before?item:item.nextSibling);updateOrderState();
+      });
+      item.addEventListener('click',()=>{
+        if(state.answered)return;
+        const prev=item.previousElementSibling;if(prev){item.parentElement.insertBefore(item,prev);updateOrderState()}
+      });
+    });
+    $('checkOrder').addEventListener('click',()=>{
+      updateOrderState();
+      const correct=JSON.stringify(state.order)===JSON.stringify(q.answer);
+      submitAnswer(correct,false,null,q)
+    });
+    updateOrderState();
+  }
+  function updateOrderState(){
+    state.order=[...questionArea.querySelectorAll('.order-item')].map(x=>x.dataset.item);
+    questionArea.querySelectorAll('.order-item .badge').forEach((x,i)=>x.textContent=i+1);
+  }
+
+  function submitAnswer(correct,timeout=false,selectedIndex=null,q=null){
+    if(state.answered)return; q=q||questions[state.index]; state.answered=true;clearInterval(state.timerId);
+    if(correct){state.score+=10;correctSfx()}else{state.lives--;wrongSfx();if(state.lives<0)state.lives=0}
+    if(q?.type==='mc'){
+      questionArea.querySelectorAll('.choice').forEach(btn=>{
+        btn.disabled=true;const idx=Number(btn.dataset.index);
+        if(idx===q.answer)btn.classList.add('correct');
+        if(selectedIndex===idx && !correct)btn.classList.add('wrong');
+      });
+    }
+    questionArea.querySelectorAll('button').forEach(b=>b.disabled=true);
+    const title=correct?'✅ BENAR!':timeout?'⏰ WAKTU HABIS':'❌ BELUM TEPAT';
+    feedback.innerHTML=`<div class="card p-4 ${correct?'bg-green-100':'bg-red-100'}">
+      <div class="text-lg font-black">${title}</div>
+      <div class="mt-2 text-sm leading-relaxed"><b>Pembahasan:</b> ${q?.explanation||''}</div>
+      ${!correct?`<div class="mt-2 badge inline-block bg-yellow-100 px-3 py-1 text-xs">❤️ Nyawa tersisa: ${state.lives}</div>`:''}
+    </div>`;
+    state.summaries.push({id:q.id,title:q.title,correct,selectedIndex,explanation:q.explanation});
+    setNext(true);nextBtn.textContent=(state.index===questions.length-1||state.lives<=0)?'LIHAT HASIL 🏆':'LANJUT ➜';
+    updateHeader();
+  }
+
+  $('startBtn').addEventListener('click',()=>{
+    const name=$('nameInput').value.trim(),nik=$('nikInput').value.trim();
+    if(!name||!nik){toast('Isi Nama dan NIK terlebih dahulu.');return}
+    ensureAudio();clickSfx();state.name=name;state.nik=nik;state.index=0;state.score=0;state.lives=5;state.summaries=[];
+    topbar.classList.remove('hidden');show(quizScreen);render();
+  });
+
+  nextBtn.addEventListener('click',()=>{
+    if(state.lives<=0||state.index===questions.length-1){showResult();return}
+    clickSfx();state.index++;render();
+  });
+
+  function showResult(){
+    clearInterval(state.timerId);show(resultScreen);
+    $('resultScore').textContent=`${state.score}/${questions.length*10}`;
+    const pct=Math.round(state.score/(questions.length*10)*100);
+    $('resultPercent').textContent=pct+'%';$('resultEmoji').textContent=pct>=70?'🏆':'🥲';
+    $('resultTitle').textContent=pct>=70?'MISSION BERHASIL!':'BELUM LULUS';
+    $('resultSub').textContent=pct>=70?'Keren! Handling ayam & telur kamu sudah makin siap di lapangan.':'Jangan berhenti di sini. Cek debriefing dan pelajari lagi poin yang masih keliru.';
+    const sum=$('summary');sum.innerHTML='';
+    state.summaries.forEach(s=>{
+      const d=document.createElement('div');d.className=`p-3 rounded-xl border-4 ${s.correct?'bg-green-100 border-green-400':'bg-red-50 border-red-300'}`;
+      d.innerHTML=`<div class="font-black">${s.correct?'✅':'❌'} Q${s.id} — ${escapeHtml(s.title)}</div>
+        <div class="text-xs mt-1 opacity-80">${s.correct?'Jawaban tepat.':'Jawaban belum tepat.'} ${escapeHtml(s.explanation)}</div>`;
+      sum.appendChild(d);
+    });
+    if(pct>=70)winSfx();else wrongSfx();
+  }
+
+  $('restartBtn').addEventListener('click',()=>location.reload());
+})();
+</script>
+</body>
+</html>
